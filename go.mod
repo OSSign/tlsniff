@@ -1,4 +1,4 @@
-module github.com/ossign/certinfo
+module github.com/ossign/tlsniff
 
 go 1.25.2
 

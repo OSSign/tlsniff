@@ -89,6 +89,10 @@ func Run(cmd *cobra.Command, args []string) {
 			if parsed.Hostname() == "" {
 				fmt.Println("Reading from host:", item)
 				split := strings.Split(item, ":")
+				if len(split) == 0 {
+					log.Fatalf("Invalid host format")
+				}
+
 				if len(split) == 1 {
 					split = append(split, "443")
 				}
@@ -197,7 +201,9 @@ func PrintCert(cert *x509.Certificate) {
 	l.AppendItem(fmt.Sprintf("Issuing Certificate URL: %v", cert.IssuingCertificateURL))
 	l.AppendItem(fmt.Sprintf("OCSP Server: %v", cert.OCSPServer))
 	l.AppendItem(fmt.Sprintf("CRL Distribution Points: %v", cert.CRLDistributionPoints))
-	PrintNextIssuer(cert.IssuingCertificateURL[0], l)
+	if len(cert.IssuingCertificateURL) > 0 {
+		PrintNextIssuer(cert.IssuingCertificateURL[0], l)
+	}
 	l.UnIndent()
 
 	l.AppendItem("Validity")

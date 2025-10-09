@@ -63,8 +63,8 @@ nfpms:
   - id: linuxbuild-amd-nfpms
     ids:
       - linuxbuild-amd
-    package_name: "certinfo"
-    description: "certinfo - A certificate information tool"
+    package_name: "tlsniff"
+    description: "tlsniff - A certificate information tool"
     vendor: "OSSign"
     maintainer: OSSign <contact@ossign.org>
     file_name_template: >-
@@ -83,8 +83,8 @@ nfpms:
   - id: linuxbuild-arm-nfpms
     ids:
       - linuxbuild-arm
-    package_name: "certinfo"
-    description: "certinfo - A certificate information tool"
+    package_name: "tlsniff"
+    description: "tlsniff - A certificate information tool"
     vendor: "OSSign"
     maintainer: OSSign <contact@ossign.org>
     file_name_template: >-
@@ -101,7 +101,7 @@ nfpms:
     bindir: /usr/local/bin
 
 binary_signs:
-  - id: certinfo
+  - id: tlsniff
     ids:
       - winbuild
     cmd: ossign
@@ -133,7 +133,7 @@ notarize:
 release:
   github:
     owner: ossign
-    name: certinfo
+    name: tlsniff
 
 uploads:
   - name: "debpkg-amd"
