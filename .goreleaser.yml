@@ -40,7 +40,7 @@ archives:
     name_template: >-
       {{ .ProjectName }}_
       {{- .Os }}_
-      {{- else }}{{ .Arch }}{{ end }}
+      {{ .Arch }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
   - id: windowsarchive
     ids:
@@ -49,7 +49,7 @@ archives:
     name_template: >-
       {{ .ProjectName }}_
       {{- .Os }}_
-      {{- else }}{{ .Arch }}{{ end }}
+      {{ .Arch }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 changelog:
@@ -74,7 +74,7 @@ nfpms:
     file_name_template: >-
       {{ .ProjectName }}_
       {{- .Os }}_
-      {{- else }}{{ .Arch }}{{ end }}
+      {{ .Arch }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 signs:
