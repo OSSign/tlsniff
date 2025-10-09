@@ -33,10 +33,6 @@ jobs:
         args: release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        UPLOAD_DEBPKG-AMD_SECRET: ${{ secrets.PACKAGE_REPO_SECRET }}
-        UPLOAD_DEBPKG-ARM_SECRET: ${{ secrets.PACKAGE_REPO_SECRET }}
-        UPLOAD_APKPKG-AMD_SECRET: ${{ secrets.PACKAGE_REPO_SECRET }}
-        UPLOAD_RPMPKG-AMD_SECRET: ${{ secrets.PACKAGE_REPO_SECRET }}
         MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
         MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
         MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
@@ -44,6 +40,15 @@ jobs:
         MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
         OSSIGN_CONFIG: ${{ secrets.OSSIGN_CONFIG }}
     
+    - name: Upload Gitea artifacts (due to buggy behaviour with goreleaser)
+      run: |
+        curl --upload-file dist/tlsniff_linux_amd64.deb -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/debian/pool/all/main/upload
+        curl --upload-file dist/tlsniff_linux_arm64.deb -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/debian/pool/all/main/upload
+        curl --upload-file dist/tlsniff_linux_amd64.rpm -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/rpm/upload
+        curl --upload-file dist/tlsniff_linux_arm64.rpm -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/rpm/upload
+        curl --upload-file dist/tlsniff_linux_amd64.apk -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/alpine/all/repository
+        curl --upload-file dist/tlsniff_linux_arm64.apk -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/alpine/all/repository
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:

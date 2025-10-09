@@ -1,7 +1,7 @@
 version: 2
 
 builds:
-  - id: linuxbuild-amd
+  - id: linux
     main: main.go
     env:
       - CGO_ENABLED=0
@@ -9,17 +9,9 @@ builds:
       - linux
     goarch:
       - amd64
-  
-  - id: linuxbuild-arm
-    main: main.go
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-    goarch:
       - arm64
-
-  - id: macbuild
+    
+  - id: mac
     main: main.go
     env:
       - CGO_ENABLED=0
@@ -28,8 +20,8 @@ builds:
     goarch:
       - amd64
       - arm64
-
-  - id: winbuild
+  
+  - id: windows
     main: main.go
     env:
       - CGO_ENABLED=0
@@ -38,19 +30,27 @@ builds:
     goarch:
       - amd64
       - arm64
-
+  
 archives:
-  - formats: [ tar.gz, binary ]
+  - id: unixarchive
+    ids:
+      - linux
+      - mac
+    formats: [ tar.gz, binary ]
     name_template: >-
       {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
+      {{- .Os }}_
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    format_overrides:
-      - goos: windows
-        formats: [ zip, binary ]
+  - id: windowsarchive
+    ids:
+      - windows
+    formats: [ zip, binary ]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Os }}_
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 changelog:
   sort: asc
@@ -60,52 +60,30 @@ changelog:
       - "^test:"
 
 nfpms:
-  - id: linuxbuild-amd-nfpms
+  - id: nfpms
     ids:
-      - linuxbuild-amd
+      - linux
+    formats:
+      - deb
+      - apk
+      - rpm
     package_name: "tlsniff"
     description: "tlsniff - A certificate information tool"
     vendor: "OSSign"
     maintainer: OSSign <contact@ossign.org>
     file_name_template: >-
       {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}amd64
-      {{- else if eq .Arch "386" }}i386
+      {{- .Os }}_
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    formats:
-      - deb
-      - apk
-      - rpm
-    bindir: /usr/local/bin
 
-  - id: linuxbuild-arm-nfpms
+signs:
+  - id: win-sign
     ids:
-      - linuxbuild-arm
-    package_name: "tlsniff"
-    description: "tlsniff - A certificate information tool"
-    vendor: "OSSign"
-    maintainer: OSSign <contact@ossign.org>
-    file_name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}amd64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
-    formats:
-      - deb
-      - apk
-      - rpm
-    bindir: /usr/local/bin
-
-binary_signs:
-  - id: tlsniff
-    ids:
-      - winbuild
+      - windows
     cmd: ossign
-    signature: "${artifact}"
+    output: true
+    artifacts: "binary"
     args:
       - "-o"
       - ${artifact}
@@ -117,7 +95,8 @@ notarize:
   macos:
     - enabled: true
       ids:
-        - macbuild
+        - mac
+
       sign:
         certificate: "{{ .Env.MACOS_SIGN_P12 }}"
         password: "{{ .Env.MACOS_SIGN_PASSWORD }}"
@@ -131,37 +110,11 @@ notarize:
         timeout: 20m
 
 release:
+  ids:
+    - mac
+    - win-sign
+    - nfpms
+    - linux
   github:
     owner: ossign
     name: tlsniff
-
-uploads:
-  - name: "debpkg-amd"
-    ids: ["linuxbuild-amd-nfpms"]
-    method: "PUT"
-    exts:
-      - deb
-    mode: archive
-    username: "ossign-dev"
-    target: https://pkg.ossign.org/debian/pool/all/main/upload
-    custom_artifact_name: true
-  
-  - name: "apkpkg-amd"
-    method: "PUT"
-    ids: ["linuxbuild-amd-nfpms"]
-    exts:
-      - apk
-    mode: archive
-    username: "ossign-dev"
-    target: https://pkg.ossign.org/alpine/all/repository
-    custom_artifact_name: true
-  
-  - name: "rpmpkg-amd"
-    method: "PUT"
-    ids: ["linuxbuild-amd-nfpms"]
-    exts:
-      - rpm
-    mode: archive
-    username: "ossign-dev"
-    target: https://pkg.ossign.org/rpm/upload
-    custom_artifact_name: true
