@@ -38,19 +38,13 @@ archives:
       - mac
     formats: [ tar.gz, binary ]
     name_template: >-
-      {{ .ProjectName }}_
-      {{- .Os }}_
-      {{ .Arch }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+      {{ .ProjectName }}_{{- .Os }}_{{ .Arch }}{{- if .Arm }}v{{ .Arm }}{{ end }}
   - id: windowsarchive
     ids:
       - windows
     formats: [ zip, binary ]
     name_template: >-
-      {{ .ProjectName }}_
-      {{- .Os }}_
-      {{ .Arch }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+      {{ .ProjectName }}_{{- .Os }}_{{ .Arch }}{{- if .Arm }}v{{ .Arm }}{{ end }}
 
 changelog:
   sort: asc
@@ -81,6 +75,7 @@ signs:
     cmd: ossign
     output: true
     artifacts: "binary"
+    signature: "${artifact}"
     args:
       - "-o"
       - ${artifact}
