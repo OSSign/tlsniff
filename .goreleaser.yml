@@ -72,15 +72,12 @@ nfpms:
     vendor: "OSSign"
     maintainer: OSSign <contact@ossign.org>
     file_name_template: >-
-      {{ .ProjectName }}_
-      {{- .Os }}_
-      {{ .Arch }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+      {{ .ProjectName }}_{{- title .Os }}_{{ .Arch }}{{- if .Arm }}v{{ .Arm }}{{ end }}
 
 signs:
   - id: win-sign
     ids:
-      - windows
+      - windowsarchive
     cmd: ossign
     output: true
     artifacts: "binary"
