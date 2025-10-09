@@ -1,0 +1,52 @@
+name: Build and Publish Packages
+
+on:
+  push:
+    tags: ["*.*.*"]
+
+
+jobs:
+  build:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - id: go
+      name: Install go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.25.0
+        cache-dependency-path: go.mod
+
+    - name: Setup OSSign
+      uses: ossign/actions/setup-ossign@main
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ossignConfig: ""
+
+    - name: Goreleaser
+      uses: goreleaser/goreleaser-action@v6
+      if: ${{ github.ref_name != 'main' }}
+      with:
+        version: ${{ github.event.release.tag.name }}
+        args: release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        UPLOAD_DEBPKG-AMD_SECRET: ${{ secrets.PACKAGE_REPO_SECRET }}
+        UPLOAD_DEBPKG-ARM_SECRET: ${{ secrets.PACKAGE_REPO_SECRET }}
+        UPLOAD_APKPKG-AMD_SECRET: ${{ secrets.PACKAGE_REPO_SECRET }}
+        UPLOAD_RPMPKG-AMD_SECRET: ${{ secrets.PACKAGE_REPO_SECRET }}
+        MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+        MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+        MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+        MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
+        MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
+        OSSIGN_CONFIG: ${{ secrets.OSSIGN_CONFIG }}
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release
+        path: dist/**
+
