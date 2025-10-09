@@ -1,0 +1,2 @@
+# certinfo
+Display certificate information
