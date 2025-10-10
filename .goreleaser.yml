@@ -106,7 +106,7 @@ release:
     - mac
     - win-sign
     - nfpms
-    - linux
+    - unixarchive
   github:
     owner: ossign
     name: tlsniff
