@@ -42,12 +42,12 @@ jobs:
     
     - name: Upload Gitea artifacts (due to buggy behaviour with goreleaser)
       run: |
-        curl --upload-file dist/tlsniff_linux_amd64.deb -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/debian/pool/all/main/upload
-        curl --upload-file dist/tlsniff_linux_arm64.deb -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/debian/pool/all/main/upload
-        curl --upload-file dist/tlsniff_linux_amd64.rpm -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/rpm/upload
-        curl --upload-file dist/tlsniff_linux_arm64.rpm -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/rpm/upload
-        curl --upload-file dist/tlsniff_linux_amd64.apk -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/alpine/all/repository
-        curl --upload-file dist/tlsniff_linux_arm64.apk -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/alpine/all/repository
+        curl --upload-file dist/tlsniff_Linux_amd64.deb -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/debian/pool/all/main/upload
+        curl --upload-file dist/tlsniff_Linux_arm64.deb -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/debian/pool/all/main/upload
+        curl --upload-file dist/tlsniff_Linux_amd64.rpm -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/rpm/upload
+        curl --upload-file dist/tlsniff_Linux_arm64.rpm -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/rpm/upload
+        curl --upload-file dist/tlsniff_Linux_amd64.apk -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/alpine/all/repository
+        curl --upload-file dist/tlsniff_Linux_arm64.apk -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/alpine/all/repository
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
