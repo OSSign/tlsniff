@@ -1,183 +1,200 @@
 # TLSniff
 Display certificate information for remote hosts or local files.
 
-## Example
+## Usage
 ```bash
-tls@tls:~$ tlsniff google.com
+Get information about a certificate from an URL, file path or stdin
 
-Reading from host: google.com 443
+Usage:
+  certinfo --[path or url] [path or url] [flags]
+
+Examples:
+certinfo --url https://example.com
+certinfo example.com
+certinfo --host example.com:443
+certinfo --path /path/to/cert.pem
+cat /path/to/cert.pem | certinfo -
+
+Flags:
+  -c, --chain         Print the full chain of trust (if available) instead of just the names
+  -h, --help          help for certinfo
+  -H, --host          Specify that the argument is a hostname (with optional port) (default) (default true)
+  -P, --pass string   Password for decrypting PKCS#12 or encrypted PEM files
+  -p, --path          Specify that the argument is a file path
+```
+
+## Examples
+### Microsoft (Basic Chain)
+```bash
+tls@tls:~$ tlsniff microsoft.com
+
+Reading from host: microsoft.com 443
 ╭─ Certificate Information
 │  ├─ Version: 3
-│  ├─ Subject: CN=*.google.com
-│  ├─ Serial Number: 61273374499769446057878895876432914017
+│  ├─ Subject: CN=microsoft.com,O=Microsoft Corporation,L=Redmond,ST=WA,C=US
+│  ├─ Serial Number: 1137545254554039778717926461496486019823897892
 │  ╰─ Is CA: false
-├─ Issuer
-│  ├─ Issuer: CN=WE2,O=Google Trust Services,C=US
-│  ├─ Issuing Certificate URL: [http://i.pki.goog/we2.crt]
-│  ├─ OCSP Server: [http://o.pki.goog/we2]
-│  ├─ CRL Distribution Points: [http://c.pki.goog/we2/xuzt3PU9F_w.crl]
-│  ╰─ Issuer Certificate
-│     ├─ Subject: CN=WE2,O=Google Trust Services,C=US
-│     ├─ Issuer: CN=GlobalSign,OU=GlobalSign ECC Root CA - R4,O=GlobalSign
-│     ├─ Not Before: 2023-12-13 09:00:00 +0000 UTC
-│     ├─ Not After: 2029-02-20 14:00:00 +0000 UTC
-│     ├─ Is CA: true
-│     ╰─ Issuer Certificate
-│        ├─ Subject: CN=GlobalSign,OU=GlobalSign ECC Root CA - R4,O=GlobalSign
-│        ├─ Issuer: CN=GlobalSign,OU=GlobalSign ECC Root CA - R4,O=GlobalSign
-│        ├─ Not Before: 2012-11-13 00:00:00 +0000 UTC
-│        ├─ Not After: 2038-01-19 03:14:07 +0000 UTC
-│        ╰─ Is CA: true
 ├─ Validity
-│  ├─ Not Before: 2025-09-22 08:40:47 +0000 UTC
-│  ╰─ Not After: 2025-12-15 08:40:46 +0000 UTC
+│  ├─ Currently Valid
+│  ├─ Not Before: 2025-10-01 05:17:14 +0000 UTC
+│  ╰─ Not After: 2026-03-30 05:17:14 +0000 UTC
 ├─ Algorithms
-│  ├─ Signature Algorithm: ECDSA-SHA256
-│  ╰─ Public Key Algorithm: ECDSA
+│  ├─ Signature Algorithm: SHA384-RSA
+│  ╰─ Public Key Algorithm: RSA
 ├─ SANs
-│  ├─ DNS Names
-│  │  ├─ *.google.com
-│  │  ├─ *.appengine.google.com
-│  │  ├─ *.bdn.dev
-│  │  ├─ *.origin-test.bdn.dev
-│  │  ├─ *.cloud.google.com
-│  │  ├─ *.crowdsource.google.com
-│  │  ├─ *.datacompute.google.com
-│  │  ├─ *.google.ca
-│  │  ├─ *.google.cl
-│  │  ├─ *.google.co.in
-│  │  ├─ *.google.co.jp
-│  │  ├─ *.google.co.uk
-│  │  ├─ *.google.com.ar
-│  │  ├─ *.google.com.au
-│  │  ├─ *.google.com.br
-│  │  ├─ *.google.com.co
-│  │  ├─ *.google.com.mx
-│  │  ├─ *.google.com.tr
-│  │  ├─ *.google.com.vn
-│  │  ├─ *.google.de
-│  │  ├─ *.google.es
-│  │  ├─ *.google.fr
-│  │  ├─ *.google.hu
-│  │  ├─ *.google.it
-│  │  ├─ *.google.nl
-│  │  ├─ *.google.pl
-│  │  ├─ *.google.pt
-│  │  ├─ *.googleapis.cn
-│  │  ├─ *.googlevideo.com
-│  │  ├─ *.gstatic.cn
-│  │  ├─ *.gstatic-cn.com
-│  │  ├─ googlecnapps.cn
-│  │  ├─ *.googlecnapps.cn
-│  │  ├─ googleapps-cn.com
-│  │  ├─ *.googleapps-cn.com
-│  │  ├─ gkecnapps.cn
-│  │  ├─ *.gkecnapps.cn
-│  │  ├─ googledownloads.cn
-│  │  ├─ *.googledownloads.cn
-│  │  ├─ recaptcha.net.cn
-│  │  ├─ *.recaptcha.net.cn
-│  │  ├─ recaptcha-cn.net
-│  │  ├─ *.recaptcha-cn.net
-│  │  ├─ widevine.cn
-│  │  ├─ *.widevine.cn
-│  │  ├─ ampproject.org.cn
-│  │  ├─ *.ampproject.org.cn
-│  │  ├─ ampproject.net.cn
-│  │  ├─ *.ampproject.net.cn
-│  │  ├─ google-analytics-cn.com
-│  │  ├─ *.google-analytics-cn.com
-│  │  ├─ googleadservices-cn.com
-│  │  ├─ *.googleadservices-cn.com
-│  │  ├─ googlevads-cn.com
-│  │  ├─ *.googlevads-cn.com
-│  │  ├─ googleapis-cn.com
-│  │  ├─ *.googleapis-cn.com
-│  │  ├─ googleoptimize-cn.com
-│  │  ├─ *.googleoptimize-cn.com
-│  │  ├─ doubleclick-cn.net
-│  │  ├─ *.doubleclick-cn.net
-│  │  ├─ *.fls.doubleclick-cn.net
-│  │  ├─ *.g.doubleclick-cn.net
-│  │  ├─ doubleclick.cn
-│  │  ├─ *.doubleclick.cn
-│  │  ├─ *.fls.doubleclick.cn
-│  │  ├─ *.g.doubleclick.cn
-│  │  ├─ dartsearch-cn.net
-│  │  ├─ *.dartsearch-cn.net
-│  │  ├─ googletraveladservices-cn.com
-│  │  ├─ *.googletraveladservices-cn.com
-│  │  ├─ googletagservices-cn.com
-│  │  ├─ *.googletagservices-cn.com
-│  │  ├─ googletagmanager-cn.com
-│  │  ├─ *.googletagmanager-cn.com
-│  │  ├─ googlesyndication-cn.com
-│  │  ├─ *.googlesyndication-cn.com
-│  │  ├─ *.safeframe.googlesyndication-cn.com
-│  │  ├─ app-measurement-cn.com
-│  │  ├─ *.app-measurement-cn.com
-│  │  ├─ gvt1-cn.com
-│  │  ├─ *.gvt1-cn.com
-│  │  ├─ gvt2-cn.com
-│  │  ├─ *.gvt2-cn.com
-│  │  ├─ 2mdn-cn.net
-│  │  ├─ *.2mdn-cn.net
-│  │  ├─ googleflights-cn.net
-│  │  ├─ *.googleflights-cn.net
-│  │  ├─ admob-cn.com
-│  │  ├─ *.admob-cn.com
-│  │  ├─ *.gemini.cloud.google.com
-│  │  ├─ googlesandbox-cn.com
-│  │  ├─ *.googlesandbox-cn.com
-│  │  ├─ *.safenup.googlesandbox-cn.com
-│  │  ├─ *.gstatic.com
-│  │  ├─ *.metric.gstatic.com
-│  │  ├─ *.gvt1.com
-│  │  ├─ *.gcpcdn.gvt1.com
-│  │  ├─ *.gvt2.com
-│  │  ├─ *.gcp.gvt2.com
-│  │  ├─ *.url.google.com
-│  │  ├─ *.youtube-nocookie.com
-│  │  ├─ *.ytimg.com
-│  │  ├─ ai.android
-│  │  ├─ android.com
-│  │  ├─ *.android.com
-│  │  ├─ *.flash.android.com
-│  │  ├─ g.cn
-│  │  ├─ *.g.cn
-│  │  ├─ g.co
-│  │  ├─ *.g.co
-│  │  ├─ goo.gl
-│  │  ├─ www.goo.gl
-│  │  ├─ google-analytics.com
-│  │  ├─ *.google-analytics.com
-│  │  ├─ google.com
-│  │  ├─ googlecommerce.com
-│  │  ├─ *.googlecommerce.com
-│  │  ├─ ggpht.cn
-│  │  ├─ *.ggpht.cn
-│  │  ├─ urchin.com
-│  │  ├─ *.urchin.com
-│  │  ├─ youtu.be
-│  │  ├─ youtube.com
-│  │  ├─ *.youtube.com
-│  │  ├─ music.youtube.com
-│  │  ├─ *.music.youtube.com
-│  │  ├─ youtubeeducation.com
-│  │  ├─ *.youtubeeducation.com
-│  │  ├─ youtubekids.com
-│  │  ├─ *.youtubekids.com
-│  │  ├─ yt.be
-│  │  ├─ *.yt.be
-│  │  ├─ android.clients.google.com
-│  │  ├─ *.android.google.cn
-│  │  ├─ *.chrome.google.cn
-│  │  ├─ *.developers.google.cn
-│  │  ╰─ *.aistudio.google.com
-│  ├─ Email Addresses
-│  ├─ IP Addresses
-│  ╰─ URIs
-╰─ Other Extensions
-   ├─ Permitted DNS Domains: []
-   ╰─ Policy Identifiers: [2.23.140.1.2.1]
+│  ╰─ DNS Names
+│     ├─ microsoft.com, s.microsoft.com, ga.microsoft.com, aep.microsoft.com, aer.microsoft.com, grv.microsoft.com, hup.microsoft.com, mac.microsoft.com
+│     ├─ mkb.microsoft.com, pme.microsoft.com, pmi.microsoft.com, rss.microsoft.com, sar.microsoft.com, tco.microsoft.com, fuse.microsoft.com, ieak.microsoft.com
+│     ├─ mac2.microsoft.com, mcsp.microsoft.com, open.microsoft.com, shop.microsoft.com, spur.microsoft.com, itpro.microsoft.com, mango.microsoft.com
+│     ├─ music.microsoft.com, pymes.microsoft.com, store.microsoft.com, aether.microsoft.com, alerts.microsoft.com, design.microsoft.com, garage.microsoft.com
+│     ├─ gigjam.microsoft.com, msctec.microsoft.com, online.microsoft.com, stream.microsoft.com, afflink.microsoft.com, connect.microsoft.com
+│     ├─ develop.microsoft.com, domains.microsoft.com, example.microsoft.com, madeira.microsoft.com, msdnisv.microsoft.com, mspress.microsoft.com
+│     ├─ www.aep.microsoft.com, www.aer.microsoft.com, wwwbeta.microsoft.com, business.microsoft.com, empresas.microsoft.com, learning.microsoft.com
+│     ├─ msdnwiki.microsoft.com, openness.microsoft.com, pinpoint.microsoft.com, snackbox.microsoft.com, sponsors.microsoft.com, stationq.microsoft.com
+│     ├─ aistories.microsoft.com, community.microsoft.com, crawlmsdn.microsoft.com, iotschool.microsoft.com, messenger.microsoft.com, minecraft.microsoft.com
+│     ├─ backoffice.microsoft.com, enterprise.microsoft.com, iotcentral.microsoft.com, pinunblock.microsoft.com, reroute443.microsoft.com
+│     ├─ communities.microsoft.com, explore-smb.microsoft.com, expressions.microsoft.com, ondernemers.microsoft.com, techacademy.microsoft.com
+│     ├─ terraserver.microsoft.com, communities2.microsoft.com, connectevent.microsoft.com, dataplatform.microsoft.com, entrepreneur.microsoft.com
+│     ├─ hxd.research.microsoft.com, mspartnerira.microsoft.com, mydatahealth.microsoft.com, oemcommunity.microsoft.com, real-stories.microsoft.com
+│     ├─ www.formspro.microsoft.com, futuredecoded.microsoft.com, upgradecenter.microsoft.com, learnanalytics.microsoft.com, onlinelearning.microsoft.com
+│     ├─ businesscentral.microsoft.com, cloud-immersion.microsoft.com, studentpartners.microsoft.com, analyticspartner.microsoft.com
+│     ├─ businessplatform.microsoft.com, explore-security.microsoft.com, kleinunternehmen.microsoft.com, partnercommunity.microsoft.com
+│     ├─ explore-marketing.microsoft.com, innovationcontest.microsoft.com, partnerincentives.microsoft.com, phoenixcataloguat.microsoft.com
+│     ├─ szkolyprzyszlosci.microsoft.com, www.powerautomate.microsoft.com, successionplanning.microsoft.com, lumiaconversationsuk.microsoft.com
+│     ├─ successionplanninguat.microsoft.com, businessmobilitycenter.microsoft.com, skypeandteams.fasttrack.microsoft.com
+│     ├─ www.microsoftdlapartnerow.microsoft.com, commercialappcertification.microsoft.com, www.skypeandteams.fasttrack.microsoft.com
+│     ├─ ceoconnections.event.microsoft.com, biz4afrika.microsoft.com, cashback.microsoft.com, www.cashback.microsoft.com, visio.microsoft.com
+│     ├─ insidemsr.microsoft.com, developervelocityassessment.com, www.developervelocityassessment.com, gears5.com, www.gears5.com, www.gearstactics.com
+│     ├─ gearstactics.com, m12.microsoft.com, seeingai.com, yourchoice.microsoft.com, mvtd.events.microsoft.com, imagine.microsoft.com, microsoft.com.au
+│     ├─ www.microsoft.com.au, dynamics.microsoft.com, powerplatform.microsoft.com, powerapps.microsoft.com, powerautomate.microsoft.com
+│     ├─ powervirtualagents.microsoft.com, powerpages.microsoft.com, test.ideas.fabric.microsoft.com, sds.microsoft.com, ppe.sds.microsoft.com
+│     ├─ www.microsoft365copilot.com, www.jclarity.com, techinnovatorsspotlight.com, www.techinnovatorsspotlight.com, copilot.ai, getlicensingready.com
+│     ├─ www.getlicensingready.com, jpn.delve.office.com, aus.delve.office.com, ind.delve.office.com, kor.delve.office.com, cobra.me.microsoft.com
+│     ├─ www.businesscentral.com, businesscentral.com, msaidatastudio.officeppe.net, ideas.fabric.microsoft.com, www.cpt.link, cpt.link, yarp.dot.net
+│     ╰─ microsoftstream.com, www.microsoftstream.com, web.microsoftstream.com, discover.copilot.ai, copilot.com, www.copilot.com, discover.copilot.com
+├─ Misc
+│  ├─ CRL Distribution Points
+│  │  ╰─ http://www.microsoft.com/pkiops/crl/Microsoft%20Azure%20RSA%20TLS%20Issuing%20CA%2008.crl
+│  ├─ OCSP Servers
+│  │  ╰─ http://oneocsp.microsoft.com/ocsp
+│  ╰─ Policy Identifiers
+│     ├─ 1.3.6.1.4.1.311.76.509.1.1
+│     ╰─ 2.23.140.1.2.2
+╰─ Issuer
+   ├─ Issuer: CN=Microsoft Azure RSA TLS Issuing CA 08,O=Microsoft Corporation,C=US
+   ├─ Issuing Certificate URL: [http://www.microsoft.com/pkiops/certs/Microsoft%20Azure%20RSA%20TLS%20Issuing%20CA%2008%20-%20xsign.crt]
+   ├─ To fetch the full chain, use the --chain flag
+   ╰─ Issuer Certificate
+      ├─ Trusted by system root CAs
+      ├─ Subject: CN=Microsoft Azure RSA TLS Issuing CA 08,O=Microsoft Corporation,C=US
+      ╰─ Issuer Certificate
+         ├─ Trusted by system root CAs
+         ├─ Subject: CN=DigiCert Global Root G2,OU=www.digicert.com,O=DigiCert Inc,C=US
+         ╰─ Trusted Root CA
 ```
+
+### Microsoft (Full Chain)
+```bash
+tls@tls:~$ tlsniff microsoft.com --chain
+
+
+Reading from host: microsoft.com 443
+╭─ Certificate Information
+│  ├─ Version: 3
+│  ├─ Subject: CN=microsoft.com,O=Microsoft Corporation,L=Redmond,ST=WA,C=US
+│  ├─ Serial Number: 1137545254554039778717926461496486019823897892
+│  ╰─ Is CA: false
+├─ Validity
+│  ├─ Currently Valid
+│  ├─ Not Before: 2025-10-01 05:17:14 +0000 UTC
+│  ╰─ Not After: 2026-03-30 05:17:14 +0000 UTC
+├─ Algorithms
+│  ├─ Signature Algorithm: SHA384-RSA
+│  ╰─ Public Key Algorithm: RSA
+├─ SANs
+│  ╰─ DNS Names
+│     ├─ microsoft.com, s.microsoft.com, ga.microsoft.com, aep.microsoft.com, aer.microsoft.com, grv.microsoft.com, hup.microsoft.com, mac.microsoft.com
+│     ├─ mkb.microsoft.com, pme.microsoft.com, pmi.microsoft.com, rss.microsoft.com, sar.microsoft.com, tco.microsoft.com, fuse.microsoft.com, ieak.microsoft.com
+│     ├─ mac2.microsoft.com, mcsp.microsoft.com, open.microsoft.com, shop.microsoft.com, spur.microsoft.com, itpro.microsoft.com, mango.microsoft.com
+│     ├─ music.microsoft.com, pymes.microsoft.com, store.microsoft.com, aether.microsoft.com, alerts.microsoft.com, design.microsoft.com, garage.microsoft.com
+│     ├─ gigjam.microsoft.com, msctec.microsoft.com, online.microsoft.com, stream.microsoft.com, afflink.microsoft.com, connect.microsoft.com
+│     ├─ develop.microsoft.com, domains.microsoft.com, example.microsoft.com, madeira.microsoft.com, msdnisv.microsoft.com, mspress.microsoft.com
+│     ├─ www.aep.microsoft.com, www.aer.microsoft.com, wwwbeta.microsoft.com, business.microsoft.com, empresas.microsoft.com, learning.microsoft.com
+│     ├─ msdnwiki.microsoft.com, openness.microsoft.com, pinpoint.microsoft.com, snackbox.microsoft.com, sponsors.microsoft.com, stationq.microsoft.com
+│     ├─ aistories.microsoft.com, community.microsoft.com, crawlmsdn.microsoft.com, iotschool.microsoft.com, messenger.microsoft.com, minecraft.microsoft.com
+│     ├─ backoffice.microsoft.com, enterprise.microsoft.com, iotcentral.microsoft.com, pinunblock.microsoft.com, reroute443.microsoft.com
+│     ├─ communities.microsoft.com, explore-smb.microsoft.com, expressions.microsoft.com, ondernemers.microsoft.com, techacademy.microsoft.com
+│     ├─ terraserver.microsoft.com, communities2.microsoft.com, connectevent.microsoft.com, dataplatform.microsoft.com, entrepreneur.microsoft.com
+│     ├─ hxd.research.microsoft.com, mspartnerira.microsoft.com, mydatahealth.microsoft.com, oemcommunity.microsoft.com, real-stories.microsoft.com
+│     ├─ www.formspro.microsoft.com, futuredecoded.microsoft.com, upgradecenter.microsoft.com, learnanalytics.microsoft.com, onlinelearning.microsoft.com
+│     ├─ businesscentral.microsoft.com, cloud-immersion.microsoft.com, studentpartners.microsoft.com, analyticspartner.microsoft.com
+│     ├─ businessplatform.microsoft.com, explore-security.microsoft.com, kleinunternehmen.microsoft.com, partnercommunity.microsoft.com
+│     ├─ explore-marketing.microsoft.com, innovationcontest.microsoft.com, partnerincentives.microsoft.com, phoenixcataloguat.microsoft.com
+│     ├─ szkolyprzyszlosci.microsoft.com, www.powerautomate.microsoft.com, successionplanning.microsoft.com, lumiaconversationsuk.microsoft.com
+│     ├─ successionplanninguat.microsoft.com, businessmobilitycenter.microsoft.com, skypeandteams.fasttrack.microsoft.com
+│     ├─ www.microsoftdlapartnerow.microsoft.com, commercialappcertification.microsoft.com, www.skypeandteams.fasttrack.microsoft.com
+│     ├─ ceoconnections.event.microsoft.com, biz4afrika.microsoft.com, cashback.microsoft.com, www.cashback.microsoft.com, visio.microsoft.com
+│     ├─ insidemsr.microsoft.com, developervelocityassessment.com, www.developervelocityassessment.com, gears5.com, www.gears5.com, www.gearstactics.com
+│     ├─ gearstactics.com, m12.microsoft.com, seeingai.com, yourchoice.microsoft.com, mvtd.events.microsoft.com, imagine.microsoft.com, microsoft.com.au
+│     ├─ www.microsoft.com.au, dynamics.microsoft.com, powerplatform.microsoft.com, powerapps.microsoft.com, powerautomate.microsoft.com
+│     ├─ powervirtualagents.microsoft.com, powerpages.microsoft.com, test.ideas.fabric.microsoft.com, sds.microsoft.com, ppe.sds.microsoft.com
+│     ├─ www.microsoft365copilot.com, www.jclarity.com, techinnovatorsspotlight.com, www.techinnovatorsspotlight.com, copilot.ai, getlicensingready.com
+│     ├─ www.getlicensingready.com, jpn.delve.office.com, aus.delve.office.com, ind.delve.office.com, kor.delve.office.com, cobra.me.microsoft.com
+│     ├─ www.businesscentral.com, businesscentral.com, msaidatastudio.officeppe.net, ideas.fabric.microsoft.com, www.cpt.link, cpt.link, yarp.dot.net
+│     ╰─ microsoftstream.com, www.microsoftstream.com, web.microsoftstream.com, discover.copilot.ai, copilot.com, www.copilot.com, discover.copilot.com
+├─ Misc
+│  ├─ CRL Distribution Points
+│  │  ╰─ http://www.microsoft.com/pkiops/crl/Microsoft%20Azure%20RSA%20TLS%20Issuing%20CA%2008.crl
+│  ├─ OCSP Servers
+│  │  ╰─ http://oneocsp.microsoft.com/ocsp
+│  ╰─ Policy Identifiers
+│     ├─ 1.3.6.1.4.1.311.76.509.1.1
+│     ╰─ 2.23.140.1.2.2
+╰─ Issuer
+   ├─ Issuer: CN=Microsoft Azure RSA TLS Issuing CA 08,O=Microsoft Corporation,C=US
+   ├─ Issuing Certificate URL: [http://www.microsoft.com/pkiops/certs/Microsoft%20Azure%20RSA%20TLS%20Issuing%20CA%2008%20-%20xsign.crt]
+   ╰─ Issuer Certificate
+      ├─ Certificate Information
+      │  ├─ Trusted by system root CAs
+      │  ├─ Version: 3
+      │  ├─ Subject: CN=Microsoft Azure RSA TLS Issuing CA 08,O=Microsoft Corporation,C=US
+      │  ├─ Serial Number: 19915020730521552240994289177714326432
+      │  ╰─ Is CA: true
+      ├─ Validity
+      │  ├─ Currently Valid
+      │  ├─ Not Before: 2023-06-08 00:00:00 +0000 UTC
+      │  ╰─ Not After: 2026-08-25 23:59:59 +0000 UTC
+      ├─ Algorithms
+      │  ├─ Signature Algorithm: SHA384-RSA
+      │  ╰─ Public Key Algorithm: RSA
+      ├─ SANs
+      │  ╰─ No Subject Alternate Names present
+      ├─ Misc
+      │  ├─ CRL Distribution Points
+      │  │  ╰─ http://crl3.digicert.com/DigiCertGlobalRootG2.crl
+      │  ├─ OCSP Servers
+      │  │  ╰─ http://ocsp.digicert.com
+      │  ╰─ Policy Identifiers
+      │     ├─ 2.23.140.1.2.1
+      │     ╰─ 2.23.140.1.2.2
+      ╰─ Issuer
+         ├─ Issuer: CN=DigiCert Global Root G2,OU=www.digicert.com,O=DigiCert Inc,C=US
+         ├─ Issuing Certificate URL: [http://cacerts.digicert.com/DigiCertGlobalRootG2.crt]
+         ╰─ Issuer Certificate
+            ├─ Certificate Information
+            │  ├─ Trusted by system root CAs
+            │  ├─ Version: 3
+            │  ├─ Subject: CN=DigiCert Global Root G2,OU=www.digicert.com,O=DigiCert Inc,C=US
+            │  ├─ Serial Number: 4293743540046975378534879503202253541
+            │  ╰─ Is CA: true
+            ├─ Validity
+            │  ├─ Currently Valid
+            │  ├─ Not Before: 2013-08-01 12:00:00 +0000 UTC
+            │  ╰─ Not After: 2038-01-15 12:00:00 +0000 UTC
+            ├─ Algorithms
+            │  ├─ Signature Algorithm: SHA256-RSA
+            │  ╰─ Public Key Algorithm: RSA
+            ├─ SANs
+            │  ╰─ No Subject Alternate Names present
+            ╰─ Misc
+               ╰─ Trusted Root CA

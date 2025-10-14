@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/clysec/greq"
 	"github.com/spf13/cobra"
@@ -18,6 +19,7 @@ import (
 	"software.sslmate.com/src/go-pkcs12"
 
 	"github.com/jedib0t/go-pretty/v6/list"
+	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 var rootCmd = &cobra.Command{
@@ -35,6 +37,7 @@ cat /path/to/cert.pem | certinfo -`,
 func init() {
 	rootCmd.PersistentFlags().BoolP("host", "H", true, "Specify that the argument is a hostname (with optional port) (default)")
 	rootCmd.PersistentFlags().BoolP("path", "p", false, "Specify that the argument is a file path")
+	rootCmd.PersistentFlags().BoolP("chain", "c", false, "Print the full chain of trust (if available)")
 
 	rootCmd.PersistentFlags().StringP("pass", "P", "", "Password for decrypting PKCS#12 or encrypted PEM files")
 }
@@ -106,10 +109,20 @@ func Run(cmd *cobra.Command, args []string) {
 	}
 
 	if cert == nil {
-		log.Fatalf("Could not determine if input is a path or URL. Please specify --path or --url.")
+		log.Fatalf("Could not determine if input is a path or URwriter. Please specify --path or --urwriter.")
 	}
 
-	PrintCert(cert)
+	writer := list.NewWriter()
+	writer.SetStyle(list.StyleConnectedRounded)
+
+	chainFlag, err := cmd.Flags().GetBool("chain")
+	if err != nil {
+		chainFlag = false
+	}
+
+	PrintCert(cert, writer, chainFlag, true)
+
+	fmt.Println(writer.Render())
 }
 
 func ParseFile(content []byte, pw string) *x509.Certificate {
@@ -183,84 +196,186 @@ func ReadHost(hostname, port string) *x509.Certificate {
 	return nil
 }
 
-func PrintCert(cert *x509.Certificate) {
-	l := list.NewWriter()
-	l.SetStyle(list.StyleConnectedRounded)
+func PrintCert(cert *x509.Certificate, writer list.Writer, fullChain bool, first bool) {
+	isTrusted := IsTrusted(cert)
 
-	l.AppendItem("Certificate Information")
-	l.Indent()
-	l.AppendItem(fmt.Sprintf("Version: %d", cert.Version))
-	l.AppendItem("Subject: " + cert.Subject.String())
-	l.AppendItem("Serial Number: " + cert.SerialNumber.String())
-	l.AppendItem(fmt.Sprintf("Is CA: %t", cert.IsCA))
-	l.UnIndent()
+	writer.AppendItem("Certificate Information")
+	writer.Indent()
+	if isTrusted == nil {
+		writer.AppendItem(text.FgGreen.Sprint("Trusted by system root CAs"))
+	} else if !first {
+		writer.AppendItem(text.BgRed.Sprint("Not trusted by system root CAs: " + isTrusted.Error()))
+	}
+	writer.AppendItem(fmt.Sprintf("Version: %d", cert.Version))
+	writer.AppendItem("Subject: " + cert.Subject.String())
+	writer.AppendItem("Serial Number: " + cert.SerialNumber.String())
 
-	l.AppendItem("Issuer")
-	l.Indent()
-	l.AppendItem("Issuer: " + cert.Issuer.String())
-	l.AppendItem(fmt.Sprintf("Issuing Certificate URL: %v", cert.IssuingCertificateURL))
-	l.AppendItem(fmt.Sprintf("OCSP Server: %v", cert.OCSPServer))
-	l.AppendItem(fmt.Sprintf("CRL Distribution Points: %v", cert.CRLDistributionPoints))
+	writer.AppendItem(fmt.Sprintf("Is CA: %t", cert.IsCA))
+	writer.UnIndent()
+
+	writer.AppendItem("Validity")
+	writer.Indent()
+
+	isValid := cert.NotBefore.Before(time.Now()) && cert.NotAfter.After(time.Now())
+	if isValid {
+		writer.AppendItem(text.FgGreen.Sprint("Currently Valid"))
+	} else if cert.NotBefore.After(time.Now()) {
+		writer.AppendItem(text.BgRed.Sprint("Not valid yet. Valid from " + cert.NotBefore.String()))
+	} else if cert.NotAfter.Before(time.Now()) {
+		writer.AppendItem(text.BgRed.Sprint("Expired on " + cert.NotAfter.String()))
+	}
+
+	writer.AppendItem("Not Before: " + cert.NotBefore.String())
+	writer.AppendItem("Not After: " + cert.NotAfter.String())
+	writer.UnIndent()
+
+	writer.AppendItem("Algorithms")
+	writer.Indent()
+	writer.AppendItem("Signature Algorithm: " + cert.SignatureAlgorithm.String())
+	writer.AppendItem("Public Key Algorithm: " + cert.PublicKeyAlgorithm.String())
+	writer.UnIndent()
+
+	writer.AppendItem("SANs")
+	writer.Indent()
+
+	if len(cert.DNSNames)+len(cert.EmailAddresses)+len(cert.IPAddresses)+len(cert.URIs) > 0 {
+
+		if len(cert.DNSNames) > 0 {
+			writer.AppendItem("DNS Names")
+			writer.Indent()
+			if len(cert.DNSNames) > 10 {
+				line := ""
+				maxLen := 150
+
+				for _, name := range cert.DNSNames {
+					if len(line)+len(name) > maxLen {
+						writer.AppendItem(line)
+						line = ""
+					}
+
+					if line == "" {
+						line = name
+					} else {
+						line = line + ", " + name
+					}
+				}
+			} else {
+				for _, name := range cert.DNSNames {
+					writer.AppendItem(name)
+				}
+			}
+
+			writer.UnIndent()
+		}
+
+		if len(cert.EmailAddresses) > 0 {
+			writer.AppendItem("Email Addresses")
+			writer.Indent()
+			for _, email := range cert.EmailAddresses {
+				writer.AppendItem(email)
+			}
+			writer.UnIndent()
+		}
+
+		if len(cert.IPAddresses) > 0 {
+
+			writer.AppendItem("IP Addresses")
+			writer.Indent()
+			for _, ip := range cert.IPAddresses {
+				writer.AppendItem(ip.String())
+			}
+			writer.UnIndent()
+		}
+
+		if len(cert.URIs) > 0 {
+			writer.AppendItem("URIs")
+			writer.Indent()
+			for _, uri := range cert.URIs {
+				writer.AppendItem(uri.String())
+			}
+			writer.UnIndent()
+		}
+
+	} else {
+		writer.AppendItem("No Subject Alternate Names present")
+	}
+
+	writer.UnIndent()
+
+	writer.AppendItem("Misc")
+	writer.Indent()
+	if len(cert.CRLDistributionPoints) > 0 {
+		writer.AppendItem("CRL Distribution Points")
+		writer.Indent()
+		for _, crl := range cert.CRLDistributionPoints {
+			if _, err := url.Parse(crl); err == nil {
+				writer.AppendItem(crl)
+			} else {
+				writer.AppendItem(text.FgRed.Sprint("(invalid URL) " + crl))
+			}
+		}
+		writer.UnIndent()
+	}
+
+	if len(cert.OCSPServer) > 0 {
+		writer.AppendItem("OCSP Servers")
+		writer.Indent()
+		for _, ocsp := range cert.OCSPServer {
+			if _, err := url.Parse(ocsp); err == nil {
+				writer.AppendItem(ocsp)
+			} else {
+				writer.AppendItem(text.FgRed.Sprint("(invalid URL) " + ocsp))
+			}
+		}
+		writer.UnIndent()
+	}
+
+	if len(cert.PermittedDNSDomains) > 0 {
+		writer.AppendItem("Permitted DNS Domains")
+		writer.Indent()
+		for _, domain := range cert.PermittedDNSDomains {
+			writer.AppendItem("Permitted DNS Domain: " + domain)
+		}
+		writer.UnIndent()
+	}
+
+	if len(cert.PolicyIdentifiers) > 0 {
+		writer.AppendItem("Policy Identifiers")
+		writer.Indent()
+		for _, policy := range cert.PolicyIdentifiers {
+			writer.AppendItem(policy.String())
+		}
+		writer.UnIndent()
+	}
+
+	if cert.Issuer.String() == cert.Subject.String() {
+		if isTrusted == nil {
+			writer.AppendItem(text.FgGreen.Sprint("Trusted Root CA"))
+		} else {
+			writer.AppendItem(text.BgRed.Sprint("Self-signed certificate"))
+		}
+		writer.UnIndent()
+		return
+	}
+
+	writer.UnIndent()
+
+	writer.AppendItem("Issuer")
+	writer.Indent()
+	writer.AppendItem("Issuer: " + cert.Issuer.String())
+	writer.AppendItem(fmt.Sprintf("Issuing Certificate URL: %v", cert.IssuingCertificateURL))
+	if !fullChain {
+		writer.AppendItem("To fetch the full chain, use the --chain flag")
+	}
+
 	if len(cert.IssuingCertificateURL) > 0 {
-		PrintNextIssuer(cert.IssuingCertificateURL[0], l)
+		PrintNextIssuer(cert.IssuingCertificateURL[0], writer, fullChain)
 	}
-	l.UnIndent()
 
-	l.AppendItem("Validity")
-	l.Indent()
-	l.AppendItem("Not Before: " + cert.NotBefore.String())
-	l.AppendItem("Not After: " + cert.NotAfter.String())
-	l.UnIndent()
-
-	l.AppendItem("Algorithms")
-	l.Indent()
-	l.AppendItem("Signature Algorithm: " + cert.SignatureAlgorithm.String())
-	l.AppendItem("Public Key Algorithm: " + cert.PublicKeyAlgorithm.String())
-	l.UnIndent()
-
-	l.AppendItem("SANs")
-	l.Indent()
-
-	l.AppendItem("DNS Names")
-	l.Indent()
-	for _, name := range cert.DNSNames {
-		l.AppendItem(name)
-	}
-	l.UnIndent()
-
-	l.AppendItem("Email Addresses")
-	l.Indent()
-	for _, email := range cert.EmailAddresses {
-		l.AppendItem(email)
-	}
-	l.UnIndent()
-
-	l.AppendItem("IP Addresses")
-	l.Indent()
-	for _, ip := range cert.IPAddresses {
-		l.AppendItem(ip.String())
-	}
-	l.UnIndent()
-
-	l.AppendItem("URIs")
-	l.Indent()
-	for _, uri := range cert.URIs {
-		l.AppendItem(uri.String())
-	}
-	l.UnIndent()
-
-	l.UnIndent()
-
-	l.AppendItem("Other Extensions")
-	l.Indent()
-	l.AppendItem(fmt.Sprintf("Permitted DNS Domains: %v", cert.PermittedDNSDomains))
-	l.AppendItem(fmt.Sprintf("Policy Identifiers: %v", cert.PolicyIdentifiers))
-	l.UnIndent()
-
-	fmt.Println(l.Render())
+	writer.UnIndent()
 }
 
-func PrintNextIssuer(url string, writer list.Writer) {
+func PrintNextIssuer(url string, writer list.Writer, fullChain bool) {
 	if url == "" {
 		return
 	}
@@ -288,16 +403,48 @@ func PrintNextIssuer(url string, writer list.Writer) {
 		return
 	}
 
+	isTrusted := IsTrusted(issuerCert)
+
 	writer.AppendItem("Issuer Certificate")
 	writer.Indent()
-	writer.AppendItem("Subject: " + issuerCert.Subject.String())
-	writer.AppendItem("Issuer: " + issuerCert.Issuer.String())
-	writer.AppendItem("Not Before: " + issuerCert.NotBefore.String())
-	writer.AppendItem("Not After: " + issuerCert.NotAfter.String())
-	writer.AppendItem(fmt.Sprintf("Is CA: %t", issuerCert.IsCA))
-	if len(issuerCert.IssuingCertificateURL) > 0 {
-		PrintNextIssuer(issuerCert.IssuingCertificateURL[0], writer)
+
+	if fullChain {
+		PrintCert(issuerCert, writer, fullChain, false)
+	} else {
+		if isTrusted == nil {
+			writer.AppendItem(text.FgGreen.Sprint("Trusted by system root CAs"))
+		} else {
+			writer.AppendItem(text.BgRed.Sprint("Not trusted by system root CAs: " + isTrusted.Error()))
+		}
+		writer.AppendItem("Subject: " + issuerCert.Subject.String())
+		if issuerCert.Subject.String() == issuerCert.Issuer.String() {
+
+			if isTrusted == nil {
+				writer.AppendItem(text.FgGreen.Sprint("Trusted Root CA"))
+			} else {
+				writer.AppendItem(text.BgRed.Sprint("Self-signed certificate"))
+			}
+			writer.UnIndent()
+			return
+		}
+		if len(issuerCert.IssuingCertificateURL) > 0 {
+			PrintNextIssuer(issuerCert.IssuingCertificateURL[0], writer, fullChain)
+		}
 	}
 
 	writer.UnIndent()
+}
+
+func IsTrusted(cert *x509.Certificate) error {
+	roots, err := x509.SystemCertPool()
+	if err != nil {
+		return fmt.Errorf("failed to load system root CAs: %v", err)
+	}
+
+	opts := x509.VerifyOptions{
+		Roots: roots,
+	}
+
+	_, err = cert.Verify(opts)
+	return err
 }
