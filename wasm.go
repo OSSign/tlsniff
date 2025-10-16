@@ -1,4 +1,4 @@
-//go:build !js && !wasm && !wasip1
+//go:build wasip1
 
 package main
 
@@ -45,6 +45,34 @@ func init() {
 }
 
 func main() {
+	fmt.Println("Hello, WebAssembly!", os.Args)
+	// promise := js.Global().Get("getArgString").Invoke()
+
+	// fmt.Println(promise)
+
+	// length := promise.Length()
+	// for i := 0; i < length; i++ {
+	// 	os.Args = append(os.Args, promise.Index(i).String())
+	// }
+	// fmt.Println("Arguments:", os.Args)
+
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatalf("Error executing command: %v", err)
+	}
+}
+
+//export Do
+func Do() {
+	fmt.Println("Hello, WebAssembly2!")
+	// promise := js.Global().Get("getArgs").Invoke()
+
+	// fmt.Println(promise)
+
+	// length := promise.Length()
+	// for i := 0; i < length; i++ {
+	// 	os.Args = append(os.Args, promise.Index(i).String())
+	// }
+
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatalf("Error executing command: %v", err)
 	}
