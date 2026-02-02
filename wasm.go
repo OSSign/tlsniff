@@ -25,13 +25,13 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "certinfo --[path or url] [path or url]",
+	Use:   "tlsniff --[path or url] [path or url]",
 	Short: "Get information about a certificate from an URL, file path or stdin",
-	Example: `certinfo --url https://example.com
-certinfo example.com
-certinfo --host example.com:443
-certinfo --path /path/to/cert.pem
-cat /path/to/cert.pem | certinfo -`,
+	Example: `tlsniff --url https://example.com
+tlsniff example.com
+tlsniff --host example.com:443
+tlsniff --path /path/to/cert.pem
+cat /path/to/cert.pem | tlsniff -`,
 	Args: cobra.ExactArgs(1),
 	Run:  Run,
 }
