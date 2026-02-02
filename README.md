@@ -6,18 +6,18 @@ Display certificate information for remote hosts or local files.
 Get information about a certificate from an URL, file path or stdin
 
 Usage:
-  certinfo --[path or url] [path or url] [flags]
+  tlsniff --[path or url] [path or url] [flags]
 
 Examples:
-certinfo --url https://example.com
-certinfo example.com
-certinfo --host example.com:443
-certinfo --path /path/to/cert.pem
-cat /path/to/cert.pem | certinfo -
+tlsniff --url https://example.com
+tlsniff example.com
+tlsniff --host example.com:443
+tlsniff --path /path/to/cert.pem
+cat /path/to/cert.pem | tlsniff -
 
 Flags:
   -c, --chain         Print the full chain of trust (if available) instead of just the names
-  -h, --help          help for certinfo
+  -h, --help          help for tlsniff
   -H, --host          Specify that the argument is a hostname (with optional port) (default) (default true)
   -P, --pass string   Password for decrypting PKCS#12 or encrypted PEM files
   -p, --path          Specify that the argument is a file path

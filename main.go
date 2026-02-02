@@ -1,3 +1,5 @@
+//go:build !js && !wasm && !wasip1
+
 package main
 
 import (
@@ -23,15 +25,14 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "certinfo --[path or url] [path or url]",
+	Use:   "tlsniff --[path or url] [path or url]",
 	Short: "Get information about a certificate from an URL, file path or stdin",
-	Example: `certinfo --url https://example.com
-certinfo example.com
-certinfo --host example.com:443
-certinfo --path /path/to/cert.pem
-cat /path/to/cert.pem | certinfo -`,
-	Args: cobra.ExactArgs(1),
-	Run:  Run,
+	Example: `tlsniff --url https://example.com
+tlsniff example.com
+tlsniff --host example.com:443
+tlsniff --path /path/to/cert.pem
+cat /path/to/cert.pem | tlsniff -`,
+	Run: Run,
 }
 
 func init() {
@@ -49,126 +50,175 @@ func main() {
 }
 
 func Run(cmd *cobra.Command, args []string) {
-	item := args[0]
-
-	var cert *x509.Certificate
-
-	if item == "-" {
-		log.Println("Reading from stdin")
-		by, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			log.Fatalf("Error reading from stdin: %v", err)
-		}
-
-		pw, _ := cmd.Flags().GetString("pass")
-		cert = ParseFile(by, pw)
-	} else {
-		isPath, _ := cmd.Flags().GetBool("path")
-		if isPath {
-			log.Println("Reading from path:", item)
-
-			content, err := os.ReadFile(item)
-			if err == nil {
-				pw, _ := cmd.Flags().GetString("pass")
-				cert = ParseFile(content, pw)
-			}
-		}
+	cargs := args
+	if len(cargs) == 0 {
+		cargs = append(cargs, "-")
 	}
 
-	if cert == nil {
-		parsed, err := url.Parse(item)
-		if err == nil {
-			fmt.Println(parsed.Hostname())
-			if parsed.Hostname() == "" {
-				parsed.Host = parsed.Path
-				parsed.Path = ""
-			}
-			fmt.Println(parsed.Port())
+	for _, item := range cargs {
+		log.Println("-------------------------------------------------")
+		log.Println("Processing item:", item)
+		var certs []*x509.Certificate
 
-			if parsed.Port() == "" && !strings.Contains(parsed.Host, ":") {
-				parsed.Host = parsed.Host + ":443"
+		if item == "-" {
+			os.Stderr.WriteString("Waiting to read from stdin...\n")
+			by, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				log.Fatalf("Error reading from stdin: %v", err)
 			}
 
-			if parsed.Hostname() == "" {
-				fmt.Println("Reading from host:", item)
-				split := strings.Split(item, ":")
-				if len(split) == 0 {
-					log.Fatalf("Invalid host format")
-				}
+			pw, _ := cmd.Flags().GetString("pass")
+			certs = ParseFile(by, pw)
+		} else {
+			isPath, _ := cmd.Flags().GetBool("path")
+			if isPath {
+				log.Println("Reading from path:", item)
 
-				if len(split) == 1 {
-					split = append(split, "443")
+				content, err := os.ReadFile(item)
+				if err == nil {
+					pw, _ := cmd.Flags().GetString("pass")
+					certs = ParseFile(content, pw)
 				}
-
-				cert = ReadHost(split[0], split[1])
 			} else {
-				fmt.Println("Reading from host:", parsed.Hostname(), parsed.Port())
-				cert = ReadHost(parsed.Hostname(), parsed.Port())
+				isActualPath, err := os.Stat(item)
+				if err == nil && !isActualPath.IsDir() {
+					log.Println("Reading from path:", item)
+
+					content, err := os.ReadFile(item)
+					if err == nil {
+						pw, _ := cmd.Flags().GetString("pass")
+						certs = ParseFile(content, pw)
+					}
+				}
 			}
 		}
+
+		if len(certs) == 0 {
+			parsed, err := url.Parse(item)
+			if err == nil {
+				fmt.Println(parsed.Hostname())
+				if parsed.Hostname() == "" {
+					parsed.Host = parsed.Path
+					parsed.Path = ""
+				}
+				fmt.Println(parsed.Port())
+
+				if parsed.Port() == "" && !strings.Contains(parsed.Host, ":") {
+					parsed.Host = parsed.Host + ":443"
+				}
+
+				if parsed.Hostname() == "" {
+					fmt.Println("Reading from host:", item)
+					split := strings.Split(item, ":")
+					if len(split) == 0 {
+						log.Fatalf("Invalid host format")
+					}
+
+					if len(split) == 1 {
+						split = append(split, "443")
+					}
+
+					certs = []*x509.Certificate{ReadHost(split[0], split[1])}
+				} else {
+					fmt.Println("Reading from host:", parsed.Hostname(), parsed.Port())
+					certs = []*x509.Certificate{ReadHost(parsed.Hostname(), parsed.Port())}
+				}
+			}
+		}
+
+		if len(certs) == 0 {
+			log.Fatalf("Could not determine if input is a path or URwriter. Please specify --path or --urwriter.")
+		}
+
+		writer := list.NewWriter()
+		writer.SetStyle(list.StyleConnectedRounded)
+
+		chainFlag, err := cmd.Flags().GetBool("chain")
+		if err != nil {
+			chainFlag = false
+		}
+
+		for _, cert := range certs {
+			PrintCert(cert, writer, chainFlag, true)
+			writer.AppendItem("-------------------------------------------------")
+		}
+
+		fmt.Println(writer.Render())
 	}
-
-	if cert == nil {
-		log.Fatalf("Could not determine if input is a path or URwriter. Please specify --path or --urwriter.")
-	}
-
-	writer := list.NewWriter()
-	writer.SetStyle(list.StyleConnectedRounded)
-
-	chainFlag, err := cmd.Flags().GetBool("chain")
-	if err != nil {
-		chainFlag = false
-	}
-
-	PrintCert(cert, writer, chainFlag, true)
-
-	fmt.Println(writer.Render())
 }
 
-func ParseFile(content []byte, pw string) *x509.Certificate {
-	block, _ := pem.Decode(content)
+func ParseFile(content []byte, pw string) []*x509.Certificate {
+	block, rest := pem.Decode(content)
+	out := []*x509.Certificate{}
+
 	if block != nil {
-		if block.Type == "CERTIFICATE" {
-			cert, err := x509.ParseCertificate(block.Bytes)
-			if err == nil {
-				return cert
+		blocks := []*pem.Block{block}
+		for len(rest) > 0 {
+			block, rest = pem.Decode(rest)
+			if block == nil {
+				break
 			}
-
-			pkcert, err := pkcs7.Parse(block.Bytes)
-			if err == nil && len(pkcert.Certificates) > 0 {
-				return pkcert.Certificates[0]
-			}
-
-			_, pfxcert, _, err := pkcs12.DecodeChain(block.Bytes, pw)
-			if err == nil {
-				return pfxcert
-			}
-
-			log.Fatalf("Failed to parse certificate: %v", err)
+			blocks = append(blocks, block)
 		}
 
-		log.Fatalf("Unsupported PEM block type: %s", block.Type)
+		for _, block := range blocks {
+			if block.Type == "CERTIFICATE" {
+				errs := []error{}
+				cert, err := x509.ParseCertificate(block.Bytes)
+				if err == nil {
+					out = append(out, cert)
+					continue
+				}
+				errs = append(errs, err)
+
+				pkcert, err := pkcs7.Parse(block.Bytes)
+				if err == nil && len(pkcert.Certificates) > 0 {
+					out = append(out, pkcert.Certificates...)
+					continue
+				}
+
+				errs = append(errs, err)
+
+				_, pfxcert, _, err := pkcs12.DecodeChain(block.Bytes, pw)
+				if err == nil {
+					out = append(out, pfxcert)
+					continue
+				}
+
+				errs = append(errs, err)
+
+				log.Printf("Err: Failed to parse certificate: %v", errs)
+				continue
+			}
+
+			log.Printf("Err: Unsupported PEM block type: %s", block.Type)
+		}
+
 	}
 
 	x5cert, err := x509.ParseCertificate(content)
 	if err == nil {
-		return x5cert
+		out = append(out, x5cert)
 	}
 
 	pkcert, err := pkcs7.Parse(content)
 	if err == nil && len(pkcert.Certificates) > 0 {
-		return pkcert.Certificates[0]
+		out = append(out, pkcert.Certificates...)
 	}
 
 	_, pfxcert, _, err := pkcs12.DecodeChain(content, pw)
 	if err == nil {
-		return pfxcert
+		out = append(out, pfxcert)
 	}
 
 	b64dec := []byte{}
 	_, err = base64.StdEncoding.Decode(b64dec, content)
 	if err == nil {
 		return ParseFile(b64dec, pw)
+	}
+
+	if len(out) > 0 {
+		return out
 	}
 
 	log.Fatalf("Failed to parse certificate: %v", err)
@@ -397,11 +447,17 @@ func PrintNextIssuer(url string, writer list.Writer, fullChain bool) {
 		return
 	}
 
-	issuerCert := ParseFile(contentBytes, "")
-	if issuerCert == nil {
+	issuerCerts := ParseFile(contentBytes, "")
+	if issuerCerts == nil || len(issuerCerts) == 0 {
 		log.Printf("Failed to parse issuer certificate from %s", url)
 		return
 	}
+
+	if len(issuerCerts) > 1 {
+		log.Printf("Warning: Multiple certificates found at %s, using the first one", url)
+	}
+
+	issuerCert := issuerCerts[0]
 
 	isTrusted := IsTrusted(issuerCert)
 
