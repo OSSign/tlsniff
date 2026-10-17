@@ -85,7 +85,7 @@ signs:
 
 notarize:
   macos:
-    - enabled: true
+    - enabled: false
       ids:
         - mac
 
