@@ -110,3 +110,37 @@ release:
   github:
     owner: ossign
     name: tlsniff
+
+uploads:
+  - name: "debian"
+    ids: ["nfpms"]
+    method: "PUT"
+    exts:
+      - deb
+    mode: archive
+    target: https://deb.ossign.org/upload?dist=all&component=main
+    custom_artifact_name: true
+    custom_headers:
+      Authorization: "Bearer {{ .Env.REPO_TOKEN }}"
+  
+  - name: "alpine"
+    method: "PUT"
+    ids: ["nfpms"]
+    exts:
+      - apk
+    mode: archive
+    target: https://alpine.ossign.org/upload?repo=all
+    custom_artifact_name: true
+    custom_headers:
+      Authorization: "Bearer {{ .Env.REPO_TOKEN }}"
+  
+  - name: "rpm"
+    method: "PUT"
+    ids: ["nfpms"]
+    exts:
+      - rpm
+    mode: archive
+    target: https://rpm.ossign.org/upload?repo=all
+    custom_artifact_name: true
+    custom_headers:
+      Authorization: "Bearer {{ .Env.REPO_TOKEN }}"

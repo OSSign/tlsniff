@@ -28,22 +28,6 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         installOnly: true
 
-    - name: Goreleaser
-      uses: goreleaser/goreleaser-action@v6
-      if: ${{ github.ref_name != 'main' }}
-      with:
-        version: ${{ github.event.release.tag.name }}
-        args: release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        MACOS_NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-        MACOS_NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-        MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
-        MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
-        MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
-        OSSIGN_CONFIG: |
-          {"tokenType": "ossignServer", "ossignServer": {"url": "https://signer.ossign.org", "key": "evcode" }}
-    
     - name: Get osshield token
       run: |
         ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
@@ -52,15 +36,20 @@ jobs:
           https://pkg.osshield.eu/api/v1/auth/github/exchange | jq -r .token)
         echo "::add-mask::$TOKEN"
         echo "OSSHIELD_TOKEN=$TOKEN" >> "$GITHUB_ENV"
-        
-    - name: Upload Gitea artifacts (due to buggy behaviour with goreleaser)
-      run: |
-        curl --upload-file dist/tlsniff_Linux_amd64.deb -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://deb.osshield.eu/upload?dist=all&component=main"
-        curl --upload-file dist/tlsniff_Linux_arm64.deb -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://deb.osshield.eu/upload?dist=all&component=main"
-        curl --upload-file dist/tlsniff_Linux_amd64.rpm -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://rpm.osshield.eu/upload?repo=all"
-        curl --upload-file dist/tlsniff_Linux_arm64.rpm -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://rpm.osshield.eu/upload?repo=all"
-        curl --upload-file dist/tlsniff_Linux_amd64.apk -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://alpine.osshield.eu/upload?repo=all"
-        curl --upload-file dist/tlsniff_Linux_arm64.apk -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://alpine.osshield.eu/upload?repo=all"
+
+    - name: Goreleaser
+      uses: goreleaser/goreleaser-action@v6
+      if: ${{ github.ref_name != 'main' }}
+      with:
+        version: ${{ github.event.release.tag.name }}
+        args: release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO_TOKEN: ${{ env.OSSHIELD_TOKEN }}
+        MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
+        OSSIGN_CONFIG: |
+          {"tokenType": "ossignServer", "ossignServer": {"url": "https://signer.ossign.org", "key": "evcode" }}
+    
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
