@@ -28,6 +28,8 @@ jobs:
       uses: ossign/ossign@main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        trustedSigning: true
+        trustedSigningKey: evcode
         installOnly: true
 
     - name: Get osshield token
@@ -48,18 +50,6 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO_TOKEN: ${{ env.OSSHIELD_TOKEN }}
-        MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
-        OSSIGN_CONFIG: |
-          {
-            "tokenType": "ossignServer", 
-            "ossignServer": {
-                "url": "https://signer.ossign.org", 
-                "key": "evcode" 
-            },
-            "timestampUrl": "http://timestamp.acs.microsoft.com/tsa/advanced",
-            "msTimestampUrl": "http://timestamp.acs.microsoft.com/tsa"
-          }
-    
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
