@@ -27,19 +27,15 @@ jobs:
     - name: Setup OSSign
       uses: ossign/ossign@main
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
         trustedSigning: true
         trustedSigningKey: evcode
-        installOnly: true
 
-    - name: Get osshield token
-      run: |
-        ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-          "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https%3A%2F%2Fpkg.osshield.eu" | jq -r .value)
-        TOKEN=$(curl -sSf -X POST -H "Authorization: Bearer $ID_TOKEN" \
-          https://pkg.osshield.eu/api/v1/auth/github/exchange | jq -r .token)
-        echo "::add-mask::$TOKEN"
-        echo "OSSHIELD_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+    - name: Get token for osshield
+      id: osshield-repo
+      uses: OSSign/actions/github-trusted@main
+      with:
+        audience: "https://pkg.osshield.eu"
+        exchange: "https://pkg.osshield.eu/api/v1/auth/github/exchange"
 
     - name: Goreleaser
       uses: goreleaser/goreleaser-action@v6
@@ -49,7 +45,7 @@ jobs:
         args: release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        REPO_TOKEN: ${{ env.OSSHIELD_TOKEN }}
+        REPO_TOKEN: ${{ steps.osshield-repo.outputs.trusted_token }}
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
