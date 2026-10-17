@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        depth: 0
 
     - id: go
       name: Install go
@@ -48,7 +50,15 @@ jobs:
         REPO_TOKEN: ${{ env.OSSHIELD_TOKEN }}
         MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
         OSSIGN_CONFIG: |
-          {"tokenType": "ossignServer", "ossignServer": {"url": "https://signer.ossign.org", "key": "evcode" }}
+          {
+            "tokenType": "ossignServer", 
+            "ossignServer": {
+                "url": "https://signer.ossign.org", 
+                "key": "evcode" 
+            },
+            "timestampUrl": "http://timestamp.acs.microsoft.com/tsa/advanced",
+            "msTimestampUrl": "http://timestamp.acs.microsoft.com/tsa"
+          }
     
 
     - name: Upload artifacts
