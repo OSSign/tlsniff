@@ -7,23 +7,26 @@ on:
 
 jobs:
   build:
-    permissions: write-all
+    permissions:
+      contents: write
+      id-token: write
+      packages: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - id: go
       name: Install go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.25.0
+        go-version: 1.27.2
         cache-dependency-path: go.mod
 
     - name: Setup OSSign
-      uses: ossign/actions/setup-ossign@main
+      uses: ossign/ossign@main
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        ossignConfig: ""
+        installOnly: true
 
     - name: Goreleaser
       uses: goreleaser/goreleaser-action@v6
@@ -38,16 +41,26 @@ jobs:
         MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
         MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
         MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
-        OSSIGN_CONFIG: ${{ secrets.OSSIGN_CONFIG }}
+        OSSIGN_CONFIG: |
+          {"tokenType": "ossignServer", "ossignServer": {"url": "https://signer.ossign.org", "key": "evcode" }}
     
+    - name: Get osshield token
+      run: |
+        ID_TOKEN=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+          "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https%3A%2F%2Fpkg.osshield.eu" | jq -r .value)
+        TOKEN=$(curl -sSf -X POST -H "Authorization: Bearer $ID_TOKEN" \
+          https://pkg.osshield.eu/api/v1/auth/github/exchange | jq -r .token)
+        echo "::add-mask::$TOKEN"
+        echo "OSSHIELD_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+        
     - name: Upload Gitea artifacts (due to buggy behaviour with goreleaser)
       run: |
-        curl --upload-file dist/tlsniff_Linux_amd64.deb -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/debian/pool/all/main/upload
-        curl --upload-file dist/tlsniff_Linux_arm64.deb -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/debian/pool/all/main/upload
-        curl --upload-file dist/tlsniff_Linux_amd64.rpm -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/rpm/upload
-        curl --upload-file dist/tlsniff_Linux_arm64.rpm -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/rpm/upload
-        curl --upload-file dist/tlsniff_Linux_amd64.apk -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/alpine/all/repository
-        curl --upload-file dist/tlsniff_Linux_arm64.apk -u "ossign-dev:${{ secrets.PACKAGE_REPO_SECRET }}" https://pkg.ossign.org/alpine/all/repository
+        curl --upload-file dist/tlsniff_Linux_amd64.deb -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://deb.osshield.eu/upload?dist=all&component=main"
+        curl --upload-file dist/tlsniff_Linux_arm64.deb -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://deb.osshield.eu/upload?dist=all&component=main"
+        curl --upload-file dist/tlsniff_Linux_amd64.rpm -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://rpm.osshield.eu/upload?repo=all"
+        curl --upload-file dist/tlsniff_Linux_arm64.rpm -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://rpm.osshield.eu/upload?repo=all"
+        curl --upload-file dist/tlsniff_Linux_amd64.apk -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://alpine.osshield.eu/upload?repo=all"
+        curl --upload-file dist/tlsniff_Linux_arm64.apk -H "Authorization: Bearer ${{ env.OSSHIELD_TOKEN }}  "https://alpine.osshield.eu/upload?repo=all"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
