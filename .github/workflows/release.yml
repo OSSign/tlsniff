@@ -27,6 +27,7 @@ jobs:
     - name: Setup OSSign
       uses: ossign/ossign@main
       with:
+        installOnly: true
         trustedSigning: true
         trustedSigningKey: evcode
 
